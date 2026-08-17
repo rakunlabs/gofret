@@ -11,12 +11,12 @@ import (
 )
 
 type nested struct {
-	Ports []int `gofret:"ports"`
+	Ports []int `cfg:"ports"`
 }
 
 type errPayload struct {
-	Name string `gofret:"name"`
-	Sub  nested `gofret:"sub"`
+	Name string `cfg:"name"`
+	Sub  nested `cfg:"sub"`
 }
 
 func TestErrorCarriesPath(t *testing.T) {
@@ -49,9 +49,9 @@ func TestErrorCarriesPath(t *testing.T) {
 
 func TestAllErrorsAreCollected(t *testing.T) {
 	type payload struct {
-		A int `gofret:"a"`
-		B int `gofret:"b"`
-		C int `gofret:"c"`
+		A int `cfg:"a"`
+		B int `cfg:"b"`
+		C int `cfg:"c"`
 	}
 
 	in := map[string]any{"a": "x", "b": "y", "c": "z"}
@@ -70,9 +70,9 @@ func TestAllErrorsAreCollected(t *testing.T) {
 
 func TestWithFailFast(t *testing.T) {
 	type payload struct {
-		A int `gofret:"a"`
-		B int `gofret:"b"`
-		C int `gofret:"c"`
+		A int `cfg:"a"`
+		B int `cfg:"b"`
+		C int `cfg:"c"`
 	}
 
 	in := map[string]any{"a": "x", "b": "y", "c": "z"}
@@ -91,9 +91,9 @@ func TestWithFailFast(t *testing.T) {
 
 func TestWithMaxErrors(t *testing.T) {
 	type payload struct {
-		A int `gofret:"a"`
-		B int `gofret:"b"`
-		C int `gofret:"c"`
+		A int `cfg:"a"`
+		B int `cfg:"b"`
+		C int `cfg:"c"`
 	}
 
 	in := map[string]any{"a": "x", "b": "y", "c": "z"}
@@ -110,18 +110,16 @@ func TestWithMaxErrors(t *testing.T) {
 	}
 }
 
+// countJoined counts the conversion failures in err. It walks the tree rather
+// than the top-level join, because a single failure may itself wrap several
+// causes.
 func countJoined(err error) int {
-	var joined interface{ Unwrap() []error }
-	if errors.As(err, &joined) {
-		return len(joined.Unwrap())
-	}
-
-	return 1
+	return len(gofret.Errors(err))
 }
 
 func TestWithErrorUnused(t *testing.T) {
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	in := map[string]any{"name": "n", "typo": 1}
@@ -167,7 +165,7 @@ func TestToIntoRejectsNonPointer(t *testing.T) {
 func TestNoPanicOnOddInput(t *testing.T) {
 	// The predecessor panicked on any of these. A library should not.
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	inputs := []any{nil, 42, "text", []int{1, 2}, make(chan int)}
@@ -187,7 +185,7 @@ func TestNoPanicOnOddInput(t *testing.T) {
 
 func TestOverflowIsReported(t *testing.T) {
 	type payload struct {
-		Small int8 `gofret:"small"`
+		Small int8 `cfg:"small"`
 	}
 
 	_, err := gofret.To[payload](map[string]any{"small": 5000})
@@ -198,7 +196,7 @@ func TestOverflowIsReported(t *testing.T) {
 
 func TestFractionalFloatToIntIsReported(t *testing.T) {
 	type payload struct {
-		N int `gofret:"n"`
+		N int `cfg:"n"`
 	}
 
 	// A whole number arriving as a float, which is how JSON delivers it, is
@@ -212,8 +210,10 @@ func TestFractionalFloatToIntIsReported(t *testing.T) {
 		t.Fatalf("got %#v", got)
 	}
 
-	// Truncating one silently would lose information, so it needs weak types.
-	if _, err := gofret.To[payload](map[string]any{"n": 5.5}); err == nil {
+	// Truncating one silently would lose information, so the strict codec
+	// refuses it.
+	strict := gofret.New(gofret.WithStrictTypes())
+	if _, err := strict.To[payload](map[string]any{"n": 5.5}); err == nil {
 		t.Fatal("5.5 must not silently truncate to 5")
 	}
 
@@ -263,16 +263,36 @@ func TestErrorWorksWithAsType(t *testing.T) {
 		t.Fatalf("Path = %q", ce.Path)
 	}
 
-	if _, ok := errors.AsType[*strconv.NumError](err); ok {
-		t.Fatal("there is no NumError in this tree")
+	if _, ok := errors.AsType[absentError](err); ok {
+		t.Fatal("there is no absentError in this tree")
+	}
+}
+
+// absentError is an error type gofret never produces, used to check that
+// errors.AsType says no when it should.
+type absentError struct{}
+
+func (absentError) Error() string { return "absent" }
+
+// TestNumberParseErrorIsReachable checks that the cause of a failed weak
+// conversion survives, so a caller can reach the strconv error underneath.
+func TestNumberParseErrorIsReachable(t *testing.T) {
+	in := map[string]any{
+		"sub": map[string]any{"ports": []any{1, "nope", 3}},
+	}
+
+	err := gofret.ToInto(in, &errPayload{})
+
+	if _, ok := errors.AsType[*strconv.NumError](err); !ok {
+		t.Fatalf("the strconv cause is not reachable in %v", err)
 	}
 }
 
 func TestErrorsListsEveryFailure(t *testing.T) {
 	type payload struct {
-		A int `gofret:"a"`
-		B int `gofret:"b"`
-		C int `gofret:"c"`
+		A int `cfg:"a"`
+		B int `cfg:"b"`
+		C int `cfg:"c"`
 	}
 
 	in := map[string]any{"a": "x", "b": "y", "c": "z"}
@@ -306,7 +326,7 @@ func TestErrorsOnSingleAndNil(t *testing.T) {
 	}
 
 	type payload struct {
-		A int `gofret:"a"`
+		A int `cfg:"a"`
 	}
 
 	err := gofret.ToInto(map[string]any{"a": "x"}, &payload{})
@@ -322,11 +342,11 @@ func TestErrorsOnSingleAndNil(t *testing.T) {
 // the same failures in the same order.
 func TestErrorOrderIsDeterministic(t *testing.T) {
 	type payload struct {
-		A int `gofret:"a"`
-		B int `gofret:"b"`
-		C int `gofret:"c"`
-		D int `gofret:"d"`
-		E int `gofret:"e"`
+		A int `cfg:"a"`
+		B int `cfg:"b"`
+		C int `cfg:"c"`
+		D int `cfg:"d"`
+		E int `cfg:"e"`
 	}
 
 	in := map[string]any{"a": "x", "b": "x", "c": "x", "d": "x", "e": "x"}
@@ -349,10 +369,10 @@ func TestErrorOrderIsDeterministic(t *testing.T) {
 
 func TestMetadataOrderIsDeterministic(t *testing.T) {
 	type payload struct {
-		A string `gofret:"a"`
-		B string `gofret:"b"`
-		C string `gofret:"c"`
-		D string `gofret:"d"`
+		A string `cfg:"a"`
+		B string `cfg:"b"`
+		C string `cfg:"c"`
+		D string `cfg:"d"`
 	}
 
 	in := map[string]any{"a": "1", "b": "2", "c": "3", "d": "4"}
@@ -379,7 +399,7 @@ func TestMetadataOrderIsDeterministic(t *testing.T) {
 // dependence: when two keys fold to the same field, the exact name wins.
 func TestExactKeyBeatsNormalized(t *testing.T) {
 	type payload struct {
-		Host string `gofret:"host"`
+		Host string `cfg:"host"`
 	}
 
 	in := map[string]any{"host": "exact", "HOST": "folded"}

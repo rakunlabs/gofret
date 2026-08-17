@@ -9,12 +9,12 @@ import (
 
 func TestWithTagAndFallback(t *testing.T) {
 	type payload struct {
-		A string `cfg:"a"`
+		A string `mine:"a"`
 		B string `json:"b"`
-		C string `cfg:"c" json:"ignored"`
+		C string `mine:"c" json:"ignored"`
 	}
 
-	c := gofret.New(gofret.WithTag("cfg"), gofret.WithTagFallback("json"))
+	c := gofret.New(gofret.WithTag("mine"), gofret.WithTagFallback("json"))
 
 	got, err := c.To[map[string]any](payload{A: "1", B: "2", C: "3"})
 	if err != nil {
@@ -27,13 +27,33 @@ func TestWithTagAndFallback(t *testing.T) {
 	}
 }
 
+func TestDefaultTag(t *testing.T) {
+	if gofret.DefaultTag != "cfg" {
+		t.Fatalf("DefaultTag = %q, want %q", gofret.DefaultTag, "cfg")
+	}
+
+	type payload struct {
+		Name string `cfg:"name"`
+	}
+
+	// No WithTag: the `cfg` tag is read out of the box.
+	got, err := gofret.To[map[string]any](payload{Name: "service"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(got, map[string]any{"name": "service"}) {
+		t.Fatalf("got %#v", got)
+	}
+}
+
 func TestWithTaggedOnlyIsSymmetric(t *testing.T) {
 	type payload struct {
 		Tagged   string `cfg:"tagged"`
 		Untagged string
 	}
 
-	c := gofret.New(gofret.WithTag("cfg"), gofret.WithTaggedOnly())
+	c := gofret.New(gofret.WithTaggedOnly())
 
 	t.Run("to map", func(t *testing.T) {
 		got, err := c.To[map[string]any](payload{Tagged: "a", Untagged: "b"})
@@ -104,10 +124,22 @@ func TestKeyMatching(t *testing.T) {
 	}{
 		{"exact", nil, "maxRetry", true},
 		{"case insensitive by default", nil, "MAXRETRY", true},
-		{"separators need loose keys", nil, "max_retry", false},
+		{"separators loose by default", nil, "max_retry", true},
 		{"loose underscore", []gofret.Option{gofret.WithLooseKeys()}, "max_retry", true},
 		{"loose dash", []gofret.Option{gofret.WithLooseKeys()}, "max-retry", true},
 		{"loose space", []gofret.Option{gofret.WithLooseKeys()}, "max retry", true},
+		{
+			"folding keeps separators apart",
+			[]gofret.Option{gofret.WithKeyNormalizer(gofret.FoldKey)},
+			"max_retry",
+			false,
+		},
+		{
+			"strict keys mean exact only",
+			[]gofret.Option{gofret.WithStrictKeys()},
+			"MAXRETRY",
+			false,
+		},
 		{
 			"normalizer off means exact only",
 			[]gofret.Option{gofret.WithKeyNormalizer(nil)},
@@ -118,8 +150,7 @@ func TestKeyMatching(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := append([]gofret.Option{gofret.WithTag("cfg")}, tt.opts...)
-			c := gofret.New(opts...)
+			c := gofret.New(tt.opts...)
 
 			got, err := c.To[payload](map[string]any{tt.key: 7})
 			if err != nil {
@@ -139,36 +170,43 @@ func TestKeyMatching(t *testing.T) {
 
 func TestWithWeakTypes(t *testing.T) {
 	type payload struct {
-		N int    `gofret:"n"`
-		S string `gofret:"s"`
-		B bool   `gofret:"b"`
+		N int    `cfg:"n"`
+		S string `cfg:"s"`
+		B bool   `cfg:"b"`
 	}
 
 	in := map[string]any{"n": "42", "s": 7, "b": "true"}
 
-	if _, err := gofret.To[payload](in); err == nil {
+	strict := gofret.New(gofret.WithStrictTypes())
+	if _, err := strict.To[payload](in); err == nil {
 		t.Fatal("the strict codec must refuse these conversions")
 	}
 
-	c := gofret.New(gofret.WithWeakTypes())
-
-	got, err := c.To[payload](in)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	want := payload{N: 42, S: "7", B: true}
-	if got != want {
-		t.Fatalf("got %#v, want %#v", got, want)
+
+	// Weak typing is the default, and asking for it explicitly changes
+	// nothing.
+	for name, c := range map[string]*gofret.Codec{
+		"default":  gofret.New(),
+		"explicit": gofret.New(gofret.WithWeakTypes()),
+	} {
+		got, err := c.To[payload](in)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+
+		if got != want {
+			t.Fatalf("%s: got %#v, want %#v", name, got, want)
+		}
 	}
 }
 
 func TestWithOmitNil(t *testing.T) {
 	type payload struct {
-		Ptr   *int           `gofret:"ptr"`
-		Slice []int          `gofret:"slice"`
-		Map   map[string]int `gofret:"map"`
-		Set   string         `gofret:"set"`
+		Ptr   *int           `cfg:"ptr"`
+		Slice []int          `cfg:"slice"`
+		Map   map[string]int `cfg:"map"`
+		Set   string         `cfg:"set"`
 	}
 
 	c := gofret.New(gofret.WithOmitNil())
@@ -185,7 +223,7 @@ func TestWithOmitNil(t *testing.T) {
 
 func TestWithZeroFields(t *testing.T) {
 	type payload struct {
-		Tags map[string]string `gofret:"tags"`
+		Tags map[string]string `cfg:"tags"`
 	}
 
 	in := map[string]any{"tags": map[string]any{"b": "2"}}
@@ -220,8 +258,8 @@ func TestWithZeroFields(t *testing.T) {
 
 func TestPartialInputKeepsDefaults(t *testing.T) {
 	type payload struct {
-		Host string `gofret:"host"`
-		Port int    `gofret:"port"`
+		Host string `cfg:"host"`
+		Port int    `cfg:"port"`
 	}
 
 	out := payload{Host: "localhost", Port: 8080}
@@ -237,7 +275,7 @@ func TestPartialInputKeepsDefaults(t *testing.T) {
 
 func TestCodecIsReusableAndConcurrent(t *testing.T) {
 	type payload struct {
-		N int `gofret:"n"`
+		N int `cfg:"n"`
 	}
 
 	c := gofret.New(gofret.WithWeakTypes())

@@ -12,8 +12,8 @@ import (
 
 func Example() {
 	type Config struct {
-		Name    string `gofret:"name"`
-		Retries int    `gofret:"retries"`
+		Name    string `cfg:"name"`
+		Retries int    `cfg:"retries"`
 	}
 
 	cfg, err := gofret.To[Config](map[string]any{
@@ -35,13 +35,13 @@ func Example() {
 // same call with a different type argument.
 func Example_toMap() {
 	type Server struct {
-		Host string `gofret:"host"`
-		Port int    `gofret:"port"`
+		Host string `cfg:"host"`
+		Port int    `cfg:"port"`
 	}
 
 	type Config struct {
-		Name    string `gofret:"name"`
-		Primary Server `gofret:"primary"`
+		Name    string `cfg:"name"`
+		Primary Server `cfg:"primary"`
 	}
 
 	m, err := gofret.To[map[string]any](Config{
@@ -63,17 +63,15 @@ func Example_toMap() {
 func Example_options() {
 	type Config struct {
 		MaxRetry int    `cfg:"maxRetry"`
-		Name     string `cfg:"name"`
+		Name     string `json:"name"`
 	}
 
-	c := gofret.New(
-		gofret.WithTag("cfg"),
-		gofret.WithWeakTypes(),
-		gofret.WithLooseKeys(),
-	)
+	// The `cfg` tag is read by default; a fallback picks up the `json` tag on
+	// fields that carry no `cfg` one.
+	c := gofret.New(gofret.WithTagFallback("json"))
 
 	// Weak typing accepts the string, and loose keys match "max_retry"
-	// against "maxRetry".
+	// against "maxRetry". Both are on by default.
 	cfg, err := c.To[Config](map[string]any{
 		"max_retry": "5",
 		"NAME":      "service",
@@ -91,7 +89,7 @@ func Example_options() {
 
 func Example_hook() {
 	type Config struct {
-		Timeout time.Duration `gofret:"timeout"`
+		Timeout time.Duration `cfg:"timeout"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.DurationHook))
@@ -112,7 +110,7 @@ func Example_hook() {
 // problem is reported instead of quietly falling through.
 func Example_hookError() {
 	type Config struct {
-		Port int `gofret:"port"`
+		Port int `cfg:"port"`
 	}
 
 	c := gofret.New(gofret.WithHooks(func(ctx gofret.HookCtx) (any, error) {
@@ -139,13 +137,13 @@ func Example_hookError() {
 // directions.
 func Example_inline() {
 	type Auth struct {
-		User string `gofret:"user"`
-		Pass string `gofret:"pass"`
+		User string `cfg:"user"`
+		Pass string `cfg:"pass"`
 	}
 
 	type Config struct {
-		Host string `gofret:"host"`
-		Auth Auth   `gofret:",inline"`
+		Host string `cfg:"host"`
+		Auth Auth   `cfg:",inline"`
 	}
 
 	m, err := gofret.To[map[string]any](Config{
@@ -169,8 +167,8 @@ func Example_inline() {
 // back out again, which is what keeps a round trip lossless.
 func Example_remain() {
 	type Config struct {
-		Name string         `gofret:"name"`
-		Rest map[string]any `gofret:",remain"`
+		Name string         `cfg:"name"`
+		Rest map[string]any `cfg:",remain"`
 	}
 
 	cfg, err := gofret.To[Config](map[string]any{
@@ -198,11 +196,11 @@ func Example_remain() {
 
 func Example_error() {
 	type Server struct {
-		Port int `gofret:"port"`
+		Port int `cfg:"port"`
 	}
 
 	type Config struct {
-		Servers []Server `gofret:"servers"`
+		Servers []Server `cfg:"servers"`
 	}
 
 	_, err := gofret.To[Config](map[string]any{
@@ -226,27 +224,27 @@ func Example_error() {
 // holds more than one. Errors lists them all.
 func ExampleErrors() {
 	type Config struct {
-		Host string `gofret:"host"`
-		Port int    `gofret:"port"`
+		Port    int `cfg:"port"`
+		Retries int `cfg:"retries"`
 	}
 
 	_, err := gofret.To[Config](map[string]any{
-		"host": 42,
-		"port": "nope",
+		"port":    "nope",
+		"retries": "many",
 	})
 
 	for _, ce := range gofret.Errors(err) {
 		fmt.Printf("%s: %s -> %s\n", ce.Path, ce.From, ce.To)
 	}
 	// Output:
-	// host: int -> string
 	// port: string -> int
+	// retries: string -> int
 }
 
 func Example_metadata() {
 	type Config struct {
-		Name    string `gofret:"name"`
-		Missing string `gofret:"missing"`
+		Name    string `cfg:"name"`
+		Missing string `cfg:"missing"`
 	}
 
 	var (
@@ -276,7 +274,7 @@ func Example_metadata() {
 // A type can decide for itself how it is written and read.
 func Example_valueEncoder() {
 	type Config struct {
-		Name csv `gofret:"name"`
+		Name csv `cfg:"name"`
 	}
 
 	m, err := gofret.To[map[string]any](Config{Name: csv{"a", "b"}})

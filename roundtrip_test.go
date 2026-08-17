@@ -13,33 +13,33 @@ import (
 // and back must return the value unchanged.
 
 type rtInner struct {
-	Enabled bool     `gofret:"enabled"`
-	Tags    []string `gofret:"tags"`
+	Enabled bool     `cfg:"enabled"`
+	Tags    []string `cfg:"tags"`
 }
 
 type rtEmbedded struct {
-	Host string `gofret:"host"`
-	Port int    `gofret:"port"`
+	Host string `cfg:"host"`
+	Port int    `cfg:"port"`
 }
 
 type rtAll struct {
-	Str    string             `gofret:"str"`
-	Int    int                `gofret:"int"`
-	Int8   int8               `gofret:"int8"`
-	Uint   uint               `gofret:"uint"`
-	Float  float64            `gofret:"float"`
-	Bool   bool               `gofret:"bool"`
-	Bytes  []byte             `gofret:"bytes"`
-	Sub    rtInner            `gofret:"sub"`
-	SubPtr *rtInner           `gofret:"subptr"`
-	List   []rtInner          `gofret:"list"`
-	Dict   map[string]int     `gofret:"dict"`
-	Deep   map[string]rtInner `gofret:"deep"`
-	Arr    [3]int             `gofret:"arr"`
-	At     time.Time          `gofret:"at"`
-	Dur    time.Duration      `gofret:"dur"`
-	Base   rtEmbedded         `gofret:",inline"`
-	Rest   map[string]any     `gofret:",remain"`
+	Str    string             `cfg:"str"`
+	Int    int                `cfg:"int"`
+	Int8   int8               `cfg:"int8"`
+	Uint   uint               `cfg:"uint"`
+	Float  float64            `cfg:"float"`
+	Bool   bool               `cfg:"bool"`
+	Bytes  []byte             `cfg:"bytes"`
+	Sub    rtInner            `cfg:"sub"`
+	SubPtr *rtInner           `cfg:"subptr"`
+	List   []rtInner          `cfg:"list"`
+	Dict   map[string]int     `cfg:"dict"`
+	Deep   map[string]rtInner `cfg:"deep"`
+	Arr    [3]int             `cfg:"arr"`
+	At     time.Time          `cfg:"at"`
+	Dur    time.Duration      `cfg:"dur"`
+	Base   rtEmbedded         `cfg:",inline"`
+	Rest   map[string]any     `cfg:",remain"`
 }
 
 func sampleAll() rtAll {
@@ -100,8 +100,9 @@ func TestRoundTripIsStableAcrossCodecs(t *testing.T) {
 
 	codecs := map[string]*gofret.Codec{
 		"default":      gofret.New(),
-		"weak":         gofret.New(gofret.WithWeakTypes()),
-		"loose keys":   gofret.New(gofret.WithLooseKeys()),
+		"strict types": gofret.New(gofret.WithStrictTypes()),
+		"strict keys":  gofret.New(gofret.WithStrictKeys()),
+		"fold keys":    gofret.New(gofret.WithKeyNormalizer(gofret.FoldKey)),
 		"snake keys":   gofret.New(gofret.WithKeyFunc(gofret.SnakeCase)),
 		"zero fields":  gofret.New(gofret.WithZeroFields()),
 		"error unused": gofret.New(gofret.WithErrorUnused()),
@@ -149,9 +150,9 @@ func TestRoundTripZeroValue(t *testing.T) {
 // into a []any along the way.
 func TestRoundTripPreservesConcreteContainerTypes(t *testing.T) {
 	type payload struct {
-		Strings []string       `gofret:"strings"`
-		Ints    []int          `gofret:"ints"`
-		Dict    map[string]int `gofret:"dict"`
+		Strings []string       `cfg:"strings"`
+		Ints    []int          `cfg:"ints"`
+		Dict    map[string]int `cfg:"dict"`
 	}
 
 	orig := payload{
@@ -180,8 +181,8 @@ func TestRoundTripPreservesConcreteContainerTypes(t *testing.T) {
 
 func TestSelfReferentialTypeTerminates(t *testing.T) {
 	type node struct {
-		Name string `gofret:"name"`
-		Next *node  `gofret:"next"`
+		Name string `cfg:"name"`
+		Next *node  `cfg:"next"`
 	}
 
 	orig := node{Name: "a", Next: &node{Name: "b"}}
@@ -207,7 +208,7 @@ func TestRecursiveSliceTypeTerminates(t *testing.T) {
 	type list []any
 
 	type holder struct {
-		L list `gofret:"l"`
+		L list `cfg:"l"`
 	}
 
 	if _, err := gofret.To[map[string]any](holder{L: list{1, "x"}}); err != nil {

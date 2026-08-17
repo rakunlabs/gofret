@@ -224,7 +224,7 @@ func (s *state) toSlice(src, dst reflect.Value, tag Tag) {
 		fallthrough
 	default:
 		if !s.weak {
-			s.fail(src, dst, fmt.Errorf("%w: expected an array or slice (enable WithWeakTypes to lift single values)", ErrUnconvertible))
+			s.fail(src, dst, fmt.Errorf("%w: expected an array or slice (WithStrictTypes forbids lifting single values)", ErrUnconvertible))
 
 			return
 		}
@@ -307,7 +307,7 @@ func (s *state) toArray(src, dst reflect.Value, tag Tag) {
 		}
 	default:
 		if !s.weak {
-			s.fail(src, dst, fmt.Errorf("%w: expected an array or slice (enable WithWeakTypes to lift single values)", ErrUnconvertible))
+			s.fail(src, dst, fmt.Errorf("%w: expected an array or slice (WithStrictTypes forbids lifting single values)", ErrUnconvertible))
 
 			return
 		}

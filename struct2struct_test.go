@@ -15,12 +15,12 @@ import (
 
 func TestStructToStructRenamesByKey(t *testing.T) {
 	type from struct {
-		A string `gofret:"shared"`
-		B string `gofret:"onlyfrom"`
+		A string `cfg:"shared"`
+		B string `cfg:"onlyfrom"`
 	}
 
 	type to struct {
-		X string `gofret:"shared"`
+		X string `cfg:"shared"`
 	}
 
 	got, err := gofret.To[to](from{A: "1", B: "2"})
@@ -35,13 +35,13 @@ func TestStructToStructRenamesByKey(t *testing.T) {
 
 func TestStructToStructRemain(t *testing.T) {
 	type from struct {
-		Name  string `gofret:"name"`
-		Extra int    `gofret:"extra"`
+		Name  string `cfg:"name"`
+		Extra int    `cfg:"extra"`
 	}
 
 	type to struct {
-		Name string         `gofret:"name"`
-		Rest map[string]any `gofret:",remain"`
+		Name string         `cfg:"name"`
+		Rest map[string]any `cfg:",remain"`
 	}
 
 	got, err := gofret.To[to](from{Name: "n", Extra: 7})
@@ -60,12 +60,12 @@ func TestStructToStructRemain(t *testing.T) {
 
 func TestStructToStructErrorUnused(t *testing.T) {
 	type from struct {
-		Name  string `gofret:"name"`
-		Extra int    `gofret:"extra"`
+		Name  string `cfg:"name"`
+		Extra int    `cfg:"extra"`
 	}
 
 	type to struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	if _, err := gofret.To[to](from{Name: "n", Extra: 7}); err != nil {
@@ -82,13 +82,13 @@ func TestStructToStructErrorUnused(t *testing.T) {
 
 func TestStructToStructMetadata(t *testing.T) {
 	type from struct {
-		Name  string `gofret:"name"`
-		Extra int    `gofret:"extra"`
+		Name  string `cfg:"name"`
+		Extra int    `cfg:"extra"`
 	}
 
 	type to struct {
-		Name    string `gofret:"name"`
-		Missing string `gofret:"missing"`
+		Name    string `cfg:"name"`
+		Missing string `cfg:"missing"`
 	}
 
 	var (
@@ -115,11 +115,11 @@ func TestStructToStructMetadata(t *testing.T) {
 
 func TestStructToStructOmitEmpty(t *testing.T) {
 	type from struct {
-		Name string `gofret:"name,omitempty"`
+		Name string `cfg:"name,omitempty"`
 	}
 
 	type to struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	out := to{Name: "default"}
@@ -136,15 +136,15 @@ func TestStructToStructOmitEmpty(t *testing.T) {
 
 func TestStructToStructInlineOnBothSides(t *testing.T) {
 	type base struct {
-		Host string `gofret:"host"`
+		Host string `cfg:"host"`
 	}
 
 	type from struct {
-		Base base `gofret:",inline"`
+		Base base `cfg:",inline"`
 	}
 
 	type to struct {
-		Host string `gofret:"host"`
+		Host string `cfg:"host"`
 	}
 
 	got, err := gofret.To[to](from{Base: base{Host: "h"}})
@@ -159,14 +159,15 @@ func TestStructToStructInlineOnBothSides(t *testing.T) {
 
 func TestStructToStructConvertsFieldTypes(t *testing.T) {
 	type from struct {
-		N string `gofret:"n"`
+		N string `cfg:"n"`
 	}
 
 	type to struct {
-		N int `gofret:"n"`
+		N int `cfg:"n"`
 	}
 
-	if _, err := gofret.To[to](from{N: "5"}); err == nil {
+	strict := gofret.New(gofret.WithStrictTypes())
+	if _, err := strict.To[to](from{N: "5"}); err == nil {
 		t.Fatal("the strict codec must refuse string to int")
 	}
 
@@ -184,7 +185,7 @@ func TestStructToStructConvertsFieldTypes(t *testing.T) {
 
 func TestSameTypeIsCopiedDirectly(t *testing.T) {
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	orig := payload{Name: "n"}

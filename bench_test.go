@@ -7,20 +7,20 @@ import (
 )
 
 type benchSub struct {
-	Host    string `gofret:"host"`
-	Port    int    `gofret:"port"`
-	Enabled bool   `gofret:"enabled"`
+	Host    string `cfg:"host"`
+	Port    int    `cfg:"port"`
+	Enabled bool   `cfg:"enabled"`
 }
 
 type benchConfig struct {
-	Name    string            `gofret:"name"`
-	Retries int               `gofret:"retries"`
-	Ratio   float64           `gofret:"ratio"`
-	Debug   bool              `gofret:"debug"`
-	Tags    []string          `gofret:"tags"`
-	Labels  map[string]string `gofret:"labels"`
-	Primary benchSub          `gofret:"primary"`
-	Nodes   []benchSub        `gofret:"nodes"`
+	Name    string            `cfg:"name"`
+	Retries int               `cfg:"retries"`
+	Ratio   float64           `cfg:"ratio"`
+	Debug   bool              `cfg:"debug"`
+	Tags    []string          `cfg:"tags"`
+	Labels  map[string]string `cfg:"labels"`
+	Primary benchSub          `cfg:"primary"`
+	Nodes   []benchSub        `cfg:"nodes"`
 }
 
 func benchInput() map[string]any {
@@ -192,14 +192,14 @@ func BenchmarkWithHook(b *testing.B) {
 // the extra work only shows up on input that was going to be rejected anyway.
 
 type errBench struct {
-	A int `gofret:"a"`
-	B int `gofret:"b"`
-	C int `gofret:"c"`
-	D int `gofret:"d"`
-	E int `gofret:"e"`
-	F int `gofret:"f"`
-	G int `gofret:"g"`
-	H int `gofret:"h"`
+	A int `cfg:"a"`
+	B int `cfg:"b"`
+	C int `cfg:"c"`
+	D int `cfg:"d"`
+	E int `cfg:"e"`
+	F int `cfg:"f"`
+	G int `cfg:"g"`
+	H int `cfg:"h"`
 }
 
 func runErrBench(b *testing.B, c *gofret.Codec, in map[string]any, wantErr bool) {

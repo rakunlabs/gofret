@@ -7,7 +7,7 @@ import (
 
 // Tag holds the parsed struct tag of a single field.
 //
-// A tag looks like `gofret:"name,opt1,opt2"`. The first comma-separated
+// A tag looks like `cfg:"name,opt1,opt2"`. The first comma-separated
 // element is the key name, the rest are options.
 type Tag struct {
 	// Name is the key name. Empty means "derive from the field name".

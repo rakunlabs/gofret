@@ -12,8 +12,8 @@ import (
 // ---------------------------------------------------------------------------
 
 type skipped struct {
-	Kept    string `gofret:"kept"`
-	Ignored string `gofret:"-"`
+	Kept    string `cfg:"kept"`
+	Ignored string `cfg:"-"`
 }
 
 // TestSkipIsSymmetric pins down the fix for the biggest inconsistency in the
@@ -54,11 +54,11 @@ func TestSkipIsSymmetric(t *testing.T) {
 
 func TestOmitEmpty(t *testing.T) {
 	type payload struct {
-		Name  string   `gofret:"name,omitempty"`
-		Count int      `gofret:"count,omitempty"`
-		List  []string `gofret:"list,omitempty"`
-		Ptr   *int     `gofret:"ptr,omitempty"`
-		Kept  string   `gofret:"kept"`
+		Name  string   `cfg:"name,omitempty"`
+		Count int      `cfg:"count,omitempty"`
+		List  []string `cfg:"list,omitempty"`
+		Ptr   *int     `cfg:"ptr,omitempty"`
+		Kept  string   `cfg:"kept"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{})
@@ -77,13 +77,13 @@ func TestOmitEmpty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type inlineBase struct {
-	Host string `gofret:"host"`
-	Port int    `gofret:"port"`
+	Host string `cfg:"host"`
+	Port int    `cfg:"port"`
 }
 
 type inlineOuter struct {
-	Name string     `gofret:"name"`
-	Base inlineBase `gofret:",inline"`
+	Name string     `cfg:"name"`
+	Base inlineBase `cfg:",inline"`
 }
 
 func TestInline(t *testing.T) {
@@ -111,8 +111,8 @@ func TestInline(t *testing.T) {
 
 func TestInlineThroughPointer(t *testing.T) {
 	type outer struct {
-		Name string      `gofret:"name"`
-		Base *inlineBase `gofret:",inline"`
+		Name string      `cfg:"name"`
+		Base *inlineBase `cfg:",inline"`
 	}
 
 	// Reading through a nil embedded pointer must not panic; the fields are
@@ -141,7 +141,7 @@ func TestInlineEmbeddedOption(t *testing.T) {
 	type Outer struct {
 		inlineBase
 
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	c := gofret.New(gofret.WithInlineEmbedded())
@@ -160,14 +160,14 @@ func TestInlineEmbeddedOption(t *testing.T) {
 // InlineBase is embedded under an exported name so it stays addressable as a
 // whole field.
 type InlineBase struct {
-	Host string `gofret:"host"`
+	Host string `cfg:"host"`
 }
 
 func TestEmbeddedIsNotInlinedByDefault(t *testing.T) {
 	type Outer struct {
 		InlineBase
 
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	// Without the option an embedded struct is an ordinary field named after
@@ -189,7 +189,7 @@ func TestEmbeddedUnexportedTypeIsInlined(t *testing.T) {
 	type Outer struct {
 		inlineBase
 
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	m, err := gofret.To[map[string]any](Outer{
@@ -208,12 +208,12 @@ func TestEmbeddedUnexportedTypeIsInlined(t *testing.T) {
 
 func TestInlineShallowerFieldWins(t *testing.T) {
 	type inner struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	type outer struct {
-		Name  string `gofret:"name"`
-		Inner inner  `gofret:",inline"`
+		Name  string `cfg:"name"`
+		Inner inner  `cfg:",inline"`
 	}
 
 	got, err := gofret.To[outer](map[string]any{"name": "top"})
@@ -232,8 +232,8 @@ func TestInlineShallowerFieldWins(t *testing.T) {
 
 func TestInlineCycleTerminates(t *testing.T) {
 	type node struct {
-		Name string `gofret:"name"`
-		Next *node  `gofret:",inline"`
+		Name string `cfg:"name"`
+		Next *node  `cfg:",inline"`
 	}
 
 	// Analysis must not loop forever on a type that inlines itself.
@@ -249,7 +249,7 @@ func TestInlineCycleTerminates(t *testing.T) {
 
 func TestInlineRequiresStruct(t *testing.T) {
 	type bad struct {
-		Oops string `gofret:",inline"`
+		Oops string `cfg:",inline"`
 	}
 
 	if _, err := gofret.To[map[string]any](bad{}); err == nil {
@@ -262,8 +262,8 @@ func TestInlineRequiresStruct(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 type withRemain struct {
-	Name string         `gofret:"name"`
-	Rest map[string]any `gofret:",remain"`
+	Name string         `cfg:"name"`
+	Rest map[string]any `cfg:",remain"`
 }
 
 func TestRemainCapturesUnknownKeys(t *testing.T) {
@@ -304,8 +304,8 @@ func TestRemainRoundTrips(t *testing.T) {
 
 func TestRemainMustBeUnique(t *testing.T) {
 	type bad struct {
-		A map[string]any `gofret:",remain"`
-		B map[string]any `gofret:",remain"`
+		A map[string]any `cfg:",remain"`
+		B map[string]any `cfg:",remain"`
 	}
 
 	if _, err := gofret.To[bad](map[string]any{}); err == nil {
@@ -315,7 +315,7 @@ func TestRemainMustBeUnique(t *testing.T) {
 
 func TestRemainMustBeMap(t *testing.T) {
 	type bad struct {
-		Rest string `gofret:",remain"`
+		Rest string `cfg:",remain"`
 	}
 
 	if _, err := gofret.To[bad](map[string]any{"x": 1}); err == nil {
@@ -329,9 +329,9 @@ func TestRemainMustBeMap(t *testing.T) {
 
 func TestStringOption(t *testing.T) {
 	type payload struct {
-		Count int     `gofret:"count,string"`
-		Ratio float64 `gofret:"ratio,string"`
-		Flag  bool    `gofret:"flag,string"`
+		Count int     `cfg:"count,string"`
+		Ratio float64 `cfg:"ratio,string"`
+		Flag  bool    `cfg:"flag,string"`
 	}
 
 	orig := payload{Count: 42, Ratio: 1.5, Flag: true}
@@ -360,7 +360,7 @@ func TestStringOption(t *testing.T) {
 
 func TestStringOptionUsesStringer(t *testing.T) {
 	type payload struct {
-		Level level `gofret:"level,string"`
+		Level level `cfg:"level,string"`
 	}
 
 	m, err := gofret.To[map[string]any](payload{Level: 2})
@@ -389,9 +389,9 @@ func (l level) String() string {
 
 func TestDeref(t *testing.T) {
 	type payload struct {
-		Set   *int `gofret:"set,deref"`
-		Unset *int `gofret:"unset,deref"`
-		Plain *int `gofret:"plain"`
+		Set   *int `cfg:"set,deref"`
+		Unset *int `cfg:"unset,deref"`
+		Plain *int `cfg:"plain"`
 	}
 
 	n := 5
@@ -420,7 +420,7 @@ func TestDeref(t *testing.T) {
 
 func TestDerefPointersOption(t *testing.T) {
 	type payload struct {
-		N *int `gofret:"n"`
+		N *int `cfg:"n"`
 	}
 
 	n := 5
@@ -443,12 +443,12 @@ func TestDerefPointersOption(t *testing.T) {
 
 func TestKeep(t *testing.T) {
 	type inner struct {
-		A int `gofret:"a"`
+		A int `cfg:"a"`
 	}
 
 	type payload struct {
-		Converted inner `gofret:"converted"`
-		Untouched inner `gofret:"untouched,keep"`
+		Converted inner `cfg:"converted"`
+		Untouched inner `cfg:"untouched,keep"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{
@@ -470,11 +470,11 @@ func TestKeep(t *testing.T) {
 
 func TestShallowOption(t *testing.T) {
 	type inner struct {
-		A int `gofret:"a"`
+		A int `cfg:"a"`
 	}
 
 	type payload struct {
-		Sub inner `gofret:"sub"`
+		Sub inner `cfg:"sub"`
 	}
 
 	c := gofret.New(gofret.WithShallow())

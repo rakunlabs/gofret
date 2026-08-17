@@ -62,10 +62,10 @@ func (s *state) toBool(src, dst reflect.Value) {
 	}
 }
 
-// failStrict reports a conversion the strict codec declines, pointing at the
-// option that would allow it.
+// failStrict reports a conversion only WithStrictTypes declines, naming the
+// option so the cause is obvious.
 func (s *state) failStrict(src, dst reflect.Value) {
-	s.fail(src, dst, fmt.Errorf("%w (enable WithWeakTypes to allow it)", ErrUnconvertible))
+	s.fail(src, dst, fmt.Errorf("%w (WithStrictTypes forbids it)", ErrUnconvertible))
 }
 
 func (s *state) toInt(src, dst reflect.Value) {

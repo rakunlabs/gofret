@@ -9,14 +9,14 @@ import (
 
 func TestSmokeMapToStruct(t *testing.T) {
 	type Sub struct {
-		Enabled bool `gofret:"enabled"`
+		Enabled bool `cfg:"enabled"`
 	}
 
 	type Config struct {
-		Name  string   `gofret:"name"`
-		Count int      `gofret:"count"`
-		Hosts []string `gofret:"hosts"`
-		Sub   Sub      `gofret:"sub"`
+		Name  string   `cfg:"name"`
+		Count int      `cfg:"count"`
+		Hosts []string `cfg:"hosts"`
+		Sub   Sub      `cfg:"sub"`
 	}
 
 	in := map[string]any{
@@ -47,15 +47,15 @@ func TestSmokeMapToStruct(t *testing.T) {
 
 func TestSmokeStructToMap(t *testing.T) {
 	type Sub struct {
-		Enabled bool `gofret:"enabled"`
+		Enabled bool `cfg:"enabled"`
 	}
 
 	type Config struct {
-		Name  string   `gofret:"name"`
-		Count int      `gofret:"count"`
-		Hosts []string `gofret:"hosts"`
-		Sub   Sub      `gofret:"sub"`
-		Ptr   *Sub     `gofret:"ptr"`
+		Name  string   `cfg:"name"`
+		Count int      `cfg:"count"`
+		Hosts []string `cfg:"hosts"`
+		Sub   Sub      `cfg:"sub"`
+		Ptr   *Sub     `cfg:"ptr"`
 	}
 
 	in := Config{
@@ -86,15 +86,15 @@ func TestSmokeStructToMap(t *testing.T) {
 
 func TestSmokeRoundTrip(t *testing.T) {
 	type Sub struct {
-		Enabled bool   `gofret:"enabled"`
-		Note    string `gofret:"note"`
+		Enabled bool   `cfg:"enabled"`
+		Note    string `cfg:"note"`
 	}
 
 	type Config struct {
-		Name  string   `gofret:"name"`
-		Count int      `gofret:"count"`
-		Hosts []string `gofret:"hosts"`
-		Sub   Sub      `gofret:"sub"`
+		Name  string   `cfg:"name"`
+		Count int      `cfg:"count"`
+		Hosts []string `cfg:"hosts"`
+		Sub   Sub      `cfg:"sub"`
 	}
 
 	orig := Config{
@@ -121,13 +121,13 @@ func TestSmokeRoundTrip(t *testing.T) {
 
 func TestSmokeStructToStruct(t *testing.T) {
 	type From struct {
-		Name  string `gofret:"name"`
-		Count int    `gofret:"count"`
+		Name  string `cfg:"name"`
+		Count int    `cfg:"count"`
 	}
 
 	type To struct {
-		Name  string `gofret:"name"`
-		Count int64  `gofret:"count"`
+		Name  string `cfg:"name"`
+		Count int64  `cfg:"count"`
 	}
 
 	got, err := gofret.To[To](From{Name: "x", Count: 7})

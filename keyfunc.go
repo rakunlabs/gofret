@@ -21,12 +21,14 @@ type KeyFunc func(string) string
 // See WithKeyNormalizer.
 type KeyNormalizer func(string) string
 
-// FoldKey lowercases the key. It is the default second-chance matcher, which
-// makes lookups case-insensitive.
+// FoldKey lowercases the key, which makes lookups case-insensitive while
+// still telling separators apart. Pass it to WithKeyNormalizer to soften the
+// default LooseKey matching without turning it off entirely.
 func FoldKey(s string) string { return strings.ToLower(s) }
 
-// LooseKey lowercases the key and removes '-', '_' and ' '. With it,
-// "MaxRetry", "max_retry", "max-retry" and "max retry" all match.
+// LooseKey lowercases the key and removes '-', '_' and ' ', so "MaxRetry",
+// "max_retry", "max-retry" and "max retry" all match. It is the default
+// matcher.
 func LooseKey(s string) string {
 	var sb strings.Builder
 

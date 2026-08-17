@@ -38,7 +38,7 @@ func TestWeakMatrix(t *testing.T) {
 		"complex128": func() any { return new(complex128) },
 	}
 
-	strict := gofret.New()
+	strict := gofret.New(gofret.WithStrictTypes())
 	weak := gofret.New(gofret.WithWeakTypes())
 
 	for sn, sv := range sources {
@@ -93,7 +93,7 @@ func TestStrictRejectsCrossKind(t *testing.T) {
 		{true, func() any { return new(string) }},
 	}
 
-	c := gofret.New()
+	c := gofret.New(gofret.WithStrictTypes())
 
 	for _, p := range pairs {
 		out := p.out()
@@ -121,7 +121,7 @@ func TestStrictAcceptsLosslessNumeric(t *testing.T) {
 		{float32(1), func() any { return new(float64) }, float64(1)},
 	}
 
-	c := gofret.New()
+	c := gofret.New(gofret.WithStrictTypes())
 
 	for _, p := range pairs {
 		out := p.out()
@@ -145,8 +145,8 @@ func TestNamedScalarTypes(t *testing.T) {
 	type myString string
 
 	type payload struct {
-		N myInt    `gofret:"n"`
-		S myString `gofret:"s"`
+		N myInt    `cfg:"n"`
+		S myString `cfg:"s"`
 	}
 
 	got, err := gofret.To[payload](map[string]any{"n": 5, "s": "x"})

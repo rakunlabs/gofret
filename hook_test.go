@@ -13,8 +13,8 @@ import (
 
 func TestHookSkipFallsThrough(t *testing.T) {
 	type payload struct {
-		N int    `gofret:"n"`
-		S string `gofret:"s"`
+		N int    `cfg:"n"`
+		S string `cfg:"s"`
 	}
 
 	calls := 0
@@ -54,7 +54,7 @@ func TestHookErrorPropagates(t *testing.T) {
 	}))
 
 	type payload struct {
-		N int `gofret:"n"`
+		N int `cfg:"n"`
 	}
 
 	_, err := c.To[payload](map[string]any{"n": 1})
@@ -96,11 +96,11 @@ func TestHookSeesFreshTypes(t *testing.T) {
 	})
 
 	type inner struct {
-		N int `gofret:"n"`
+		N int `cfg:"n"`
 	}
 
 	type payload struct {
-		Sub inner `gofret:"sub"`
+		Sub inner `cfg:"sub"`
 	}
 
 	c := gofret.New(gofret.WithHooks(record))
@@ -127,11 +127,11 @@ func slicesContains(list []string, want string) bool {
 
 func TestHookPathAndTag(t *testing.T) {
 	type inner struct {
-		Port int `gofret:"port,omitempty"`
+		Port int `cfg:"port,omitempty"`
 	}
 
 	type payload struct {
-		Hosts []inner `gofret:"hosts"`
+		Hosts []inner `cfg:"hosts"`
 	}
 
 	var got struct {
@@ -174,7 +174,7 @@ func TestHookTo(t *testing.T) {
 	})))
 
 	type payload struct {
-		Timeout time.Duration `gofret:"timeout"`
+		Timeout time.Duration `cfg:"timeout"`
 	}
 
 	got, err := c.To[payload](map[string]any{"timeout": "1h30m"})
@@ -195,7 +195,7 @@ func TestHookFromMatchesOnSourceOnly(t *testing.T) {
 	})))
 
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	at := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
@@ -216,7 +216,7 @@ func TestHookBetween(t *testing.T) {
 	})))
 
 	type payload struct {
-		Day time.Time `gofret:"day"`
+		Day time.Time `cfg:"day"`
 	}
 
 	got, err := c.To[payload](map[string]any{"day": "2026-08-17"})
@@ -231,8 +231,8 @@ func TestHookBetween(t *testing.T) {
 
 func TestDurationHook(t *testing.T) {
 	type payload struct {
-		Timeout time.Duration `gofret:"timeout"`
-		Retry   time.Duration `gofret:"retry"`
+		Timeout time.Duration `cfg:"timeout"`
+		Retry   time.Duration `cfg:"retry"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.DurationHook))
@@ -264,7 +264,7 @@ func TestDurationHook(t *testing.T) {
 
 func TestDurationHookReportsBadInput(t *testing.T) {
 	type payload struct {
-		Timeout time.Duration `gofret:"timeout"`
+		Timeout time.Duration `cfg:"timeout"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.DurationHook))
@@ -277,7 +277,7 @@ func TestDurationHookReportsBadInput(t *testing.T) {
 
 func TestTimeHook(t *testing.T) {
 	type payload struct {
-		Day time.Time `gofret:"day"`
+		Day time.Time `cfg:"day"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.TimeHook("2006-01-02", time.RFC3339)))
@@ -321,7 +321,7 @@ func (u *upperString) DecodeValue(v any) error {
 
 func TestValueEncoderAndDecoder(t *testing.T) {
 	type payload struct {
-		Name upperString `gofret:"name"`
+		Name upperString `cfg:"name"`
 	}
 
 	m, err := gofret.To[map[string]any](payload{Name: "abc"})
@@ -345,7 +345,7 @@ func TestValueEncoderAndDecoder(t *testing.T) {
 
 func TestValueDecoderErrorPropagates(t *testing.T) {
 	type payload struct {
-		Name upperString `gofret:"name"`
+		Name upperString `cfg:"name"`
 	}
 
 	_, err := gofret.To[payload](map[string]any{"name": 42})
@@ -362,7 +362,7 @@ func TestHooksBeatInterfaces(t *testing.T) {
 	})))
 
 	type payload struct {
-		Name upperString `gofret:"name"`
+		Name upperString `cfg:"name"`
 	}
 
 	m, err := c.To[map[string]any](payload{Name: "abc"})
@@ -381,7 +381,7 @@ func TestHooksBeatInterfaces(t *testing.T) {
 
 func TestTextMarshalerIsSymmetric(t *testing.T) {
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	at := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
@@ -410,7 +410,7 @@ func TestTextMarshalerIsSymmetric(t *testing.T) {
 
 func TestTimeStaysWholeInAMap(t *testing.T) {
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	at := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)

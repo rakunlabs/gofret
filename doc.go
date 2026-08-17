@@ -17,24 +17,27 @@
 //
 // # Configuration
 //
-// The package-level functions use a strict, zero-configuration codec. Build a
-// [Codec] when you want options. A Codec is immutable, safe for concurrent
-// use, and caches its analysis of every struct type it sees, so make one and
-// keep it:
+// The defaults suit configuration data, which is what gofret is mostly
+// pointed at: keys match loosely, ignoring case, '-', '_' and ' ', and scalars
+// convert leniently, so the "8080" that an environment variable hands you
+// reaches an int field. [WithStrictKeys] and [WithStrictTypes] turn those off.
+//
+// Build a [Codec] when you want options. A Codec is immutable, safe for
+// concurrent use, and caches its analysis of every struct type it sees, so
+// make one and keep it:
 //
 //	c := gofret.New(
-//	    gofret.WithTag("cfg"),
-//	    gofret.WithWeakTypes(),
-//	    gofret.WithLooseKeys(),
+//	    gofret.WithTagFallback("json"),
 //	    gofret.WithHooks(gofret.DurationHook),
+//	    gofret.WithErrorUnused(),
 //	)
 //
 // # Struct tags
 //
-// Fields are read from the `gofret` tag by default; see [WithTag]. The first
+// Fields are read from the `cfg` tag by default; see [WithTag]. The first
 // element is the key name and the rest are options:
 //
-//	Field string `gofret:"name,omitempty"`
+//	Field string `cfg:"name,omitempty"`
 //
 //	-           skip the field, in both directions
 //	omitempty   drop the field when it holds the zero value

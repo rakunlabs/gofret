@@ -73,9 +73,11 @@ func TestScalarConversions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var opts []gofret.Option
+			// Weak typing is the default, so a case that does not ask for
+			// it is exercising the strict codec.
+			opts := []gofret.Option{gofret.WithStrictTypes()}
 			if tt.weak {
-				opts = append(opts, gofret.WithWeakTypes())
+				opts = []gofret.Option{gofret.WithWeakTypes()}
 			}
 
 			err := gofret.New(opts...).ToInto(tt.in, tt.out)
@@ -128,7 +130,8 @@ func TestSliceConversions(t *testing.T) {
 	t.Run("single value needs weak types", func(t *testing.T) {
 		var out []int
 
-		if err := gofret.ToInto(4, &out); err == nil {
+		strict := gofret.New(gofret.WithStrictTypes())
+		if err := strict.ToInto(4, &out); err == nil {
 			t.Fatal("lifting a scalar into a slice must need weak types")
 		}
 
@@ -305,7 +308,7 @@ func TestPointerConversions(t *testing.T) {
 
 func TestNonEmptyInterfaceDestination(t *testing.T) {
 	type payload struct {
-		S fmtStringer `gofret:"s"`
+		S fmtStringer `cfg:"s"`
 	}
 
 	var out payload
@@ -328,7 +331,7 @@ type fmtStringer interface{ String() string }
 
 func TestNilHandling(t *testing.T) {
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	t.Run("nil value leaves the field alone", func(t *testing.T) {

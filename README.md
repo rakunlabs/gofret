@@ -36,16 +36,20 @@ back, _ := gofret.To[Config](m)
 
 ## Options
 
-The package-level functions use a strict, zero-configuration codec. Build a
-`Codec` when you want options. It is immutable, safe for concurrent use, and
-caches its analysis of every struct type it sees, so make one and keep it:
+The defaults suit configuration data: keys match loosely and scalars convert
+leniently, so the `"8080"` an environment variable hands you reaches an `int`
+field and `max_retry`, `max-retry` and `MaxRetry` all find the same one.
+`WithStrictKeys()` and `WithStrictTypes()` turn those off.
+
+Build a `Codec` when you want options. It is immutable, safe for concurrent
+use, and caches its analysis of every struct type it sees, so make one and
+keep it:
 
 ```go
 c := gofret.New(
-    gofret.WithTag("cfg"),
-    gofret.WithWeakTypes(),
-    gofret.WithLooseKeys(),
+    gofret.WithTagFallback("json"),
     gofret.WithHooks(gofret.DurationHook),
+    gofret.WithErrorUnused(),
 )
 
 err := c.ToInto(data, &cfg)
@@ -53,12 +57,14 @@ err := c.ToInto(data, &cfg)
 
 | option | effect |
 | --- | --- |
-| `WithTag(s)` | struct tag to read, default `gofret` |
+| `WithTag(s)` | struct tag to read, default `cfg` |
 | `WithTagFallback(s...)` | tags consulted when the primary one is absent |
 | `WithHooks(h...)` | conversion hooks |
-| `WithWeakTypes()` | lenient scalar conversions: `"42"` to `42`, `1` to `true` |
-| `WithLooseKeys()` | match keys ignoring case, `-`, `_` and ` ` |
-| `WithKeyNormalizer(fn)` | replace the fallback key matcher; `nil` means exact only |
+| `WithWeakTypes()` | lenient scalar conversions: `"42"` to `42`, `1` to `true` (default) |
+| `WithStrictTypes()` | only conversions that cannot lose information |
+| `WithLooseKeys()` | match keys ignoring case, `-`, `_` and ` ` (default) |
+| `WithStrictKeys()` | match keys exactly |
+| `WithKeyNormalizer(fn)` | replace the fallback key matcher; `FoldKey` for case-only, `nil` for exact |
 | `WithKeyFunc(fn)` | derive keys from field names: `CamelCase`, `SnakeCase`, `KebabCase`, `PascalCase` |
 | `WithZeroFields()` | zero a destination before writing instead of merging into it |
 | `WithInlineEmbedded()` | treat every embedded struct as `inline` |
@@ -70,18 +76,15 @@ err := c.ToInto(data, &cfg)
 | `WithFailFast()` | stop at the first error |
 | `WithMaxErrors(n)` | cap how many errors are collected |
 
-Keys match case-insensitively by default, which is usually what configuration
-data needs. `WithKeyNormalizer(nil)` turns that off.
-
 ## Struct tags
 
 ```go
 type Config struct {
-    Name    string         `gofret:"name"`
-    Secret  string         `gofret:"-"`
-    Debug   bool           `gofret:"debug,omitempty"`
-    Auth    Auth           `gofret:",inline"`
-    Rest    map[string]any `gofret:",remain"`
+    Name    string         `cfg:"name"`
+    Secret  string         `cfg:"-"`
+    Debug   bool           `cfg:"debug,omitempty"`
+    Auth    Auth           `cfg:",inline"`
+    Rest    map[string]any `cfg:",remain"`
 }
 ```
 

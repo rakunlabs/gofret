@@ -7,20 +7,20 @@ import (
 )
 
 type fuzzTarget struct {
-	Str   string         `gofret:"str"`
-	Int   int            `gofret:"int"`
-	Int8  int8           `gofret:"int8"`
-	Uint  uint16         `gofret:"uint"`
-	Float float64        `gofret:"float"`
-	Bool  bool           `gofret:"bool"`
-	List  []string       `gofret:"list"`
-	Dict  map[string]int `gofret:"dict"`
-	Sub   *fuzzSub       `gofret:"sub"`
-	Rest  map[string]any `gofret:",remain"`
+	Str   string         `cfg:"str"`
+	Int   int            `cfg:"int"`
+	Int8  int8           `cfg:"int8"`
+	Uint  uint16         `cfg:"uint"`
+	Float float64        `cfg:"float"`
+	Bool  bool           `cfg:"bool"`
+	List  []string       `cfg:"list"`
+	Dict  map[string]int `cfg:"dict"`
+	Sub   *fuzzSub       `cfg:"sub"`
+	Rest  map[string]any `cfg:",remain"`
 }
 
 type fuzzSub struct {
-	Nested string `gofret:"nested"`
+	Nested string `cfg:"nested"`
 }
 
 // FuzzToStruct feeds arbitrary maps at a struct. Nothing it can produce may
@@ -36,7 +36,7 @@ func FuzzToStruct(f *testing.F) {
 
 	codecs := []*gofret.Codec{
 		gofret.New(),
-		gofret.New(gofret.WithWeakTypes()),
+		gofret.New(gofret.WithStrictTypes(), gofret.WithStrictKeys()),
 		gofret.New(gofret.WithWeakTypes(), gofret.WithLooseKeys(), gofret.WithErrorUnused()),
 		gofret.New(gofret.WithZeroFields(), gofret.WithFailFast()),
 	}

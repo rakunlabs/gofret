@@ -116,7 +116,7 @@ func TestOptString(t *testing.T) {
 
 func TestUnknownTagOptionSurfacesAsError(t *testing.T) {
 	type bad struct {
-		Name string `gofret:"name,omitemty"`
+		Name string `cfg:"name,omitemty"`
 	}
 
 	_, err := To[map[string]any](bad{Name: "x"})

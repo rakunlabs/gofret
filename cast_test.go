@@ -24,14 +24,14 @@ type failingEncoder struct{}
 func (failingEncoder) EncodeValue() (any, error) { return nil, errors.New("encode boom") }
 
 type skippingEncoder struct {
-	N int `gofret:"n"`
+	N int `cfg:"n"`
 }
 
 func (skippingEncoder) EncodeValue() (any, error) { return nil, gofret.ErrSkip }
 
 func TestStringerOnPointerReceiver(t *testing.T) {
 	type payload struct {
-		P ptrStringer `gofret:"p,string"`
+		P ptrStringer `cfg:"p,string"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{P: ptrStringer{n: 3}})
@@ -46,7 +46,7 @@ func TestStringerOnPointerReceiver(t *testing.T) {
 
 func TestValueEncoderOnPointerReceiver(t *testing.T) {
 	type payload struct {
-		P ptrEncoder `gofret:"p"`
+		P ptrEncoder `cfg:"p"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{P: ptrEncoder{n: 3}})
@@ -61,7 +61,7 @@ func TestValueEncoderOnPointerReceiver(t *testing.T) {
 
 func TestValueEncoderErrorPropagates(t *testing.T) {
 	type payload struct {
-		P failingEncoder `gofret:"p"`
+		P failingEncoder `cfg:"p"`
 	}
 
 	_, err := gofret.To[map[string]any](payload{})
@@ -74,7 +74,7 @@ func TestValueEncoderErrorPropagates(t *testing.T) {
 // "handle me the usual way".
 func TestValueEncoderCanDecline(t *testing.T) {
 	type payload struct {
-		P skippingEncoder `gofret:"p"`
+		P skippingEncoder `cfg:"p"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{P: skippingEncoder{N: 4}})
@@ -90,7 +90,7 @@ func TestValueEncoderCanDecline(t *testing.T) {
 
 func TestErrorRendersAsString(t *testing.T) {
 	type payload struct {
-		Err error `gofret:"err,string"`
+		Err error `cfg:"err,string"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{Err: errors.New("bad")})
@@ -105,10 +105,10 @@ func TestErrorRendersAsString(t *testing.T) {
 
 func TestNilRendersAsEmptyString(t *testing.T) {
 	type payload struct {
-		Err error   `gofret:"err,string"`
-		Ptr *int    `gofret:"ptr,string"`
-		Any any     `gofret:"any,string"`
-		Fn  *string `gofret:"fn,string"`
+		Err error   `cfg:"err,string"`
+		Ptr *int    `cfg:"ptr,string"`
+		Any any     `cfg:"any,string"`
+		Fn  *string `cfg:"fn,string"`
 	}
 
 	got, err := gofret.To[map[string]any](payload{})
@@ -125,7 +125,7 @@ func TestNilRendersAsEmptyString(t *testing.T) {
 
 func TestTextUnmarshalerOnCommonTypes(t *testing.T) {
 	type payload struct {
-		IP net.IP `gofret:"ip"`
+		IP net.IP `cfg:"ip"`
 	}
 
 	got, err := gofret.To[payload](map[string]any{"ip": "192.0.2.1"})
@@ -140,7 +140,7 @@ func TestTextUnmarshalerOnCommonTypes(t *testing.T) {
 
 func TestTextMarshalerError(t *testing.T) {
 	type payload struct {
-		At badText `gofret:"at"`
+		At badText `cfg:"at"`
 	}
 
 	if _, err := gofret.To[map[string]string](payload{}); err == nil {
@@ -154,7 +154,7 @@ func (badText) MarshalText() ([]byte, error) { return nil, errors.New("marshal b
 
 func TestTextUnmarshalerError(t *testing.T) {
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	if _, err := gofret.To[payload](map[string]any{"at": "not a time"}); err == nil {
@@ -214,7 +214,9 @@ func TestUintFromNegativeUnderWeakTypes(t *testing.T) {
 func TestFloatFromNegativeToUint(t *testing.T) {
 	var out uint
 
-	if err := gofret.ToInto(-1.0, &out); !errors.Is(err, gofret.ErrOverflow) {
+	c := gofret.New(gofret.WithStrictTypes())
+
+	if err := c.ToInto(-1.0, &out); !errors.Is(err, gofret.ErrOverflow) {
 		t.Fatalf("err = %v, want ErrOverflow", err)
 	}
 }
@@ -263,7 +265,7 @@ func TestRunesAndBytesToString(t *testing.T) {
 
 func TestNonStringMapKeyInPath(t *testing.T) {
 	type payload struct {
-		N int `gofret:"1"`
+		N int `cfg:"1"`
 	}
 
 	// A non-string key still has to produce a readable path.
@@ -279,7 +281,7 @@ func TestNonStringMapKeyInPath(t *testing.T) {
 
 func TestTimeFormatHook(t *testing.T) {
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	at := time.Date(2026, 8, 17, 12, 0, 0, 0, time.UTC)
@@ -310,7 +312,7 @@ func TestTimeFormatHook(t *testing.T) {
 
 func TestNilHook(t *testing.T) {
 	type payload struct {
-		N *int `gofret:"n"`
+		N *int `cfg:"n"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.NilHook))
@@ -327,7 +329,7 @@ func TestNilHook(t *testing.T) {
 
 func TestEmptyDurationString(t *testing.T) {
 	type payload struct {
-		D time.Duration `gofret:"d"`
+		D time.Duration `cfg:"d"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.DurationHook))
@@ -344,7 +346,7 @@ func TestEmptyDurationString(t *testing.T) {
 
 func TestEmptyTimeString(t *testing.T) {
 	type payload struct {
-		At time.Time `gofret:"at"`
+		At time.Time `cfg:"at"`
 	}
 
 	c := gofret.New(gofret.WithHooks(gofret.TimeHook()))
@@ -372,7 +374,9 @@ func TestArrayFromString(t *testing.T) {
 
 	var wrong [3]int64
 
-	if err := gofret.ToInto("abc", &wrong); err == nil {
+	strict := gofret.New(gofret.WithStrictTypes())
+
+	if err := strict.ToInto("abc", &wrong); err == nil {
 		t.Fatal("a string must not fill an int64 array in strict mode")
 	}
 }
@@ -407,7 +411,7 @@ func TestArrayFromEmptyMapWeak(t *testing.T) {
 
 func TestUnexportedFieldsAreIgnored(t *testing.T) {
 	type payload struct {
-		Name   string `gofret:"name"`
+		Name   string `cfg:"name"`
 		hidden string
 	}
 

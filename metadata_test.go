@@ -10,13 +10,13 @@ import (
 
 func TestMetadata(t *testing.T) {
 	type sub struct {
-		Port int `gofret:"port"`
+		Port int `cfg:"port"`
 	}
 
 	type payload struct {
-		Name    string `gofret:"name"`
-		Missing string `gofret:"missing"`
-		Sub     sub    `gofret:"sub"`
+		Name    string `cfg:"name"`
+		Missing string `cfg:"missing"`
+		Sub     sub    `cfg:"sub"`
 	}
 
 	in := map[string]any{
@@ -53,11 +53,11 @@ func TestMetadata(t *testing.T) {
 
 func TestMetadataNestedUnused(t *testing.T) {
 	type sub struct {
-		Port int `gofret:"port"`
+		Port int `cfg:"port"`
 	}
 
 	type payload struct {
-		Sub sub `gofret:"sub"`
+		Sub sub `cfg:"sub"`
 	}
 
 	in := map[string]any{"sub": map[string]any{"port": 1, "extra": 2}}
@@ -78,7 +78,7 @@ func TestMetadataNestedUnused(t *testing.T) {
 
 func TestMetadataReset(t *testing.T) {
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	var md gofret.Metadata
@@ -102,7 +102,7 @@ func TestMetadataReset(t *testing.T) {
 
 func TestMetadataIsOptional(t *testing.T) {
 	type payload struct {
-		Name string `gofret:"name"`
+		Name string `cfg:"name"`
 	}
 
 	var out payload

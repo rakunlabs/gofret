@@ -27,14 +27,18 @@ type config struct {
 }
 
 // DefaultTag is the struct tag gofret reads when WithTag is not given.
-const DefaultTag = "gofret"
+const DefaultTag = "cfg"
 
+// defaultConfig is tuned for configuration data, which is what gofret is
+// mostly pointed at: keys arrive in whatever casing and separator style the
+// file format happens to use, and values arrive as strings from environment
+// variables and command-line flags. Both are therefore handled leniently by
+// default. WithStrictKeys and WithStrictTypes turn that off.
 func defaultConfig() config {
 	return config{
-		tag: DefaultTag,
-		// Case-insensitive matching is the least surprising default for
-		// configuration data, where key casing rarely matches Go field names.
-		normalizer: FoldKey,
+		tag:        DefaultTag,
+		normalizer: LooseKey,
+		weakTypes:  true,
 	}
 }
 
@@ -65,7 +69,8 @@ func WithKeyFunc(fn KeyFunc) Option {
 // normalized forms are equal. Passing nil disables fallback matching, making
 // lookups exact.
 //
-// The default is FoldKey, which matches case-insensitively.
+// The default is LooseKey. Pass FoldKey for case-insensitive matching that
+// still respects separators.
 func WithKeyNormalizer(fn KeyNormalizer) Option {
 	return func(c *config) { c.normalizer = fn }
 }
@@ -73,9 +78,16 @@ func WithKeyNormalizer(fn KeyNormalizer) Option {
 // WithLooseKeys matches keys ignoring case, '-', '_' and ' ', so "MaxRetry",
 // "max_retry" and "max-retry" all refer to the same field.
 //
-// It is shorthand for WithKeyNormalizer(LooseKey).
+// It is shorthand for WithKeyNormalizer(LooseKey) and is the default; pass it
+// explicitly only to undo an earlier WithStrictKeys or WithKeyNormalizer.
 func WithLooseKeys() Option {
 	return func(c *config) { c.normalizer = LooseKey }
+}
+
+// WithStrictKeys matches keys exactly, byte for byte. It is shorthand for
+// WithKeyNormalizer(nil) and turns off the default loose matching.
+func WithStrictKeys() Option {
+	return func(c *config) { c.normalizer = nil }
 }
 
 // WithWeakTypes enables lenient scalar conversions:
@@ -87,9 +99,18 @@ func WithLooseKeys() Option {
 //   - a single value lifted into a one-element slice
 //   - an empty map to an empty slice, and the reverse
 //
-// Without it, only conversions that cannot lose information are performed.
+// It is the default; pass it explicitly only to undo an earlier
+// WithStrictTypes.
 func WithWeakTypes() Option {
 	return func(c *config) { c.weakTypes = true }
+}
+
+// WithStrictTypes turns off the lenient conversions described by
+// WithWeakTypes, so only conversions that cannot lose information are
+// performed: "42" no longer reaches an int field, 3.7 no longer truncates
+// into one, and a negative value no longer wraps into an unsigned one.
+func WithStrictTypes() Option {
+	return func(c *config) { c.weakTypes = false }
 }
 
 // WithZeroFields zeroes a destination before writing to it. Without it, maps
