@@ -1,6 +1,7 @@
 # gofret
 
 [![License](https://img.shields.io/github/license/rakunlabs/gofret?color=red&style=flat-square)](https://raw.githubusercontent.com/rakunlabs/gofret/main/LICENSE)
+[![Coverage](https://img.shields.io/sonar/coverage/rakunlabs_gofret?logo=sonarcloud&server=https%3A%2F%2Fsonarcloud.io&style=flat-square)](https://sonarcloud.io/summary/overall?id=rakunlabs_gofret)
 [![CI](https://img.shields.io/github/actions/workflow/status/rakunlabs/gofret/test.yml?branch=main&logo=github&style=flat-square&label=ci)](https://github.com/rakunlabs/gofret/actions)
 [![Go Reference](https://img.shields.io/badge/reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/rakunlabs/gofret)
 
